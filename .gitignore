@@ -1,0 +1,6 @@
+*.pyc
+*.conf
+*.sh
+*.log
+energy.dat
+
