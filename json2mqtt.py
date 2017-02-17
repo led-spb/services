@@ -3,8 +3,14 @@
 import requests, json
 import paho.mqtt.publish as publish
 import argparse, logging
-import urlparse
-from jinja2 import Template
+import urlparse, datetime
+from jinja2 import Template, Environment
+
+def datetimeformat(value, format='%d-%m-%Y %H:%M:%s'):
+    return value.strftime(format)
+
+def todatetime(value):
+    return datetime.datetime.fromtimestamp( int(value) )
 
 parser = argparse.ArgumentParser()
 parser.add_argument( "-u","--url", required=True )
@@ -22,13 +28,18 @@ params = { 'auth':     None if args.mqtt.username==None else {'username': args.m
            'port':     1883 if args.mqtt.port==None else args.mqtt.port,
            'retain':   args.retain }
 
+
+jinja = Environment()
+jinja.filters['datetimeformat'] = datetimeformat
+jinja.filters['todatetime'] = todatetime
+
 req = requests.get( args.url )
 logging.debug( req.text )
 data = req.json()
 
 for item in args.topic:
   topic, template = item
-  template = Template(template)
+  template = jinja.from_string(template)
   payload = template.render( response=data )
 
   params.update( { 'topic': topic, 'payload': payload } )
