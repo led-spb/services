@@ -2,5 +2,5 @@
 *.conf
 *.sh
 *.log
-energy.dat
-
+*.dat
+*.token
