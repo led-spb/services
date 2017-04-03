@@ -42,20 +42,23 @@ class GDriveSync(watchdog.events.FileSystemEventHandler):
         pass
 
     def on_created(self, event):
-        if isinstance(event, watchdog.events.FileCreatedEvent):
-           filename = event.src_path
-           logging.info("New file %s", filename )
+        try:
+          if isinstance(event, watchdog.events.FileCreatedEvent):
+             filename = event.src_path
+             logging.info("New file %s", filename )
 
-           mimetype = mimetypes.guess_type(filename, False)
-           mimetype = 'application/octet-stream' if mimetype==None else mimetype[0]
+             mimetype = mimetypes.guess_type(filename, False)
+             mimetype = 'application/octet-stream' if mimetype==None else mimetype[0]
 
-           media = MediaFileUpload( filename, chunksize=8*1024, mimetype= mimetype,resumable=True )
-           body = { "name": os.path.basename(filename) }
-           if self.folder!=None:
-              body["parents"] = [ self.folder['id'] ]
+             media = MediaFileUpload( filename, chunksize=8*1024, mimetype= mimetype,resumable=True )
+             body = { "name": os.path.basename(filename) }
+             if self.folder!=None:
+                body["parents"] = [ self.folder['id'] ]
 
-           response = self.gdrive.files().create( body=body, media_body=media ).execute()
-           logging.info("Stored id=%s", response['id'] )
+             response = self.gdrive.files().create( body=body, media_body=media ).execute()
+             logging.info("Stored id=%s", response['id'] )
+        except Exception,e:
+          logging.exception("Fault to save file");
 
 
     def start(self):
