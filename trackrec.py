@@ -62,7 +62,6 @@ class GPXRecorder:
              gpx_segment.points.append( point )
           return gpx
 
-
 if __name__ == "__main__":
    class LoadFromFile( argparse.Action ):
        def __call__ (self, parser, namespace, values, option_string = None):
@@ -77,7 +76,7 @@ if __name__ == "__main__":
    parser.add_argument( "-v", action="store_true", default=False, help="Verbose logging", dest="verbose" )
    parser.add_argument( "--logfile", help="Logging into file" )
    args = parser.parse_args()
-   logging.basicConfig(format="[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s",  level= logging.DEBUG if args.verbose else logging.INFO, filename=args.logfile )
+   logging.basicConfig( format="[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s",  level= logging.DEBUG if args.verbose else logging.INFO, filename=args.logfile )
 
    recorder = GPXRecorder( args.url, storage=args.storage )
    recorder.start()

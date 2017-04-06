@@ -1,6 +1,7 @@
 *.pyc
 *.conf
-*.sh
 *.log
 *.dat
+*.png
 *.token
+weather.sh
