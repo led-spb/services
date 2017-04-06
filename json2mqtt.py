@@ -12,7 +12,7 @@ def datetimeformat(value, format='%d-%m-%Y %H:%M:%s'):
 def todatetime(value):
     return datetime.datetime.fromtimestamp( int(value) )
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser( fromfile_prefix_chars='@' )
 parser.add_argument( "-u","--url", required=True )
 parser.add_argument( "-m","--mqtt", default="localhost:1883", type=urlparse.urlparse )
 parser.add_argument( "-r","--retain", action="store_true", default=False )
@@ -27,7 +27,6 @@ params = { 'auth':     None if args.mqtt.username==None else {'username': args.m
            'hostname': args.mqtt.hostname,
            'port':     1883 if args.mqtt.port==None else args.mqtt.port,
            'retain':   args.retain }
-
 
 jinja = Environment()
 jinja.filters['datetimeformat'] = datetimeformat

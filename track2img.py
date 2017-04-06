@@ -60,13 +60,7 @@ def display_gpx(gpx, namespace):
 
 
 if __name__ == "__main__":
-   class LoadFromFile( argparse.Action ):
-       def __call__ (self, parser, namespace, values, option_string = None):
-          with values as f:
-              parser.parse_args(f.read().split(), namespace)
-
    parser = argparse.ArgumentParser(fromfile_prefix_chars='@')
-   parser.add_argument( "-c", "--config", type=open, action=LoadFromFile, help="Load config from file" )
    parser.add_argument( "--url", required=True )
    parser.add_argument( "-v", action="store_true", default=False, help="Verbose logging", dest="verbose" )
    parser.add_argument( "--logfile", help="Logging into file" )
