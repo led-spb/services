@@ -134,7 +134,7 @@ def main():
            with values as f:
                parser.parse_args(f.read().split(), namespace)
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser( fromfile_prefix_chars='@' )
     parser.add_argument( "-c", "--config", type=open, action=LoadFromFile, help="Load config from file" )
     parser.add_argument( "--mqtt", default="localhost:1883" )
     parser.add_argument( "--auth" )

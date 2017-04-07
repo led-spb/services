@@ -13,7 +13,7 @@ class LoadFromFile( argparse.Action ):
        with values as f:
            parser.parse_args(f.read().split(), namespace)
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser( fromfile_prefix_chars='@' )
 parser.add_argument( "--storage", default="googleapi.token" )
 parser.add_argument( "--client_id", required=True )
 parser.add_argument( "--secret", required=True )

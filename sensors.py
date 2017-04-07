@@ -30,7 +30,7 @@ if __name__ == '__main__':
            with values as f:
                parser.parse_args(f.read().split(), namespace)
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser( fromfile_prefix_chars='@' )
     parser.add_argument( "-c", "--config", type=open, action=LoadFromFile, help="Load config from file" )
     parser.add_argument( "-u","--url", default="localhost:1883", type=urlparse.urlparse )
     parser.add_argument( "--auth" )
