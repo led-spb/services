@@ -51,12 +51,15 @@ if __name__ == "__main__":
    for folder_name in target_dir.split('/'):
        folders = gdrive.files().list( q="name = '%s' and mimeType = 'application/vnd.google-apps.folder' and '%s' in parents" % (folder_name, folder_id), fields="files(id,name)" ).execute().get('files',[])
        if len(folders)==0:
+          logging.info("Creating folder: %s", folder_name )
           folder_id = gdrive.files().create( body={ 'name': folder_name, 'mimeType': 'application/vnd.google-apps.folder', 'parents': [folder_id] } ).execute().get('id', None)
        else:
           folder_id = folders[0]['id']
    logging.info("target folder id: %s", folder_id)
 
    mimetype = mimetypes.guess_type( args.source, False)
-   media = apiclient.http.MediaIoBaseUpload( open(args.source,"rb"), chunksize=8*1024, mimetype= 'application/octet-stream' if mimetype==None else mimetype[0], resumable=True )
-   response = gdrive.files().create( body={"name": target_name, "parents": [folder_id] }, media_body=media ).execute()
+   mimetype = 'application/octet-stream' if mimetype==None or mimetype[0]==None else mimetype[0]
+
+   media = apiclient.http.MediaIoBaseUpload( open(args.source,"rb"), chunksize=8*1024, mimetype=mimetype, resumable=True )
+   response = gdrive.files().create( body={"name": target_name, "parents": [folder_id], 'mimeType': mimetype }, media_body=media ).execute()
    logging.info("Stored id=%s", response['id'] )

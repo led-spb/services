@@ -5,6 +5,7 @@ import paho.mqtt.client as mqtt
 import json
 import os.path
 import gpxpy.gpx
+import datetime
 
 class GPXRecorder:
       def __init__(self, url, storage ):
@@ -42,7 +43,7 @@ class GPXRecorder:
              filename = "%s-%s.gpx" % (device, start_time.strftime("%Y_%m_%d-%H_%M") )
              logging.info("Storing track to %s", filename)
 
-             f = open( os.path.append(self.storage, filename), "wb" )
+             f = open( os.path.join(self.storage, filename), "wb" )
              f.write( gpx.to_xml() )
              f.close()
           pass
@@ -56,7 +57,7 @@ class GPXRecorder:
 
           for idx, p in enumerate(track):
              point = gpxpy.gpx.GPXTrackPoint(
-                  p["lat"], p["lon"], elevation= p['alt'] if 'alt' in p else None, time=datetime.datetime.fromtimestamp( p["tst"] ), speed=p["vel"] if 'vel' in p else None,
+                  p["lat"], p["lon"], elevation= p['alt'] if 'alt' in p else None, time=datetime.datetime.utcfromtimestamp( p["tst"] ), speed=p["vel"] if 'vel' in p else None,
                   name = "Start" if idx==0 else ( "Finish" if idx==len(track)-1 else None )
              )
              gpx_segment.points.append( point )
