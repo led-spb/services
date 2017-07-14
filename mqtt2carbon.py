@@ -10,18 +10,7 @@ import time
 import socket
 import json
 import signal
-import argparse
-
-#MQTT_HOST = os.environ.get('MQTT_HOST', 'localhost')
-#CARBON_SERVER = os.environ.get('CARBON_SERVER', '127.0.0.1')
-#CARBON_PORT = 2003
-#MQTT_PORT = 1883
-#LOGFORMAT = '%(asctime)-15s %(message)s'
-#DEBUG = os.environ.get('DEBUG', False)
-#if DEBUG:
-#    logging.basicConfig(level=logging.DEBUG, format=LOGFORMAT)
-#else:
-#    logging.basicConfig(level=logging.INFO, format=LOGFORMAT)
+import urlparse, argparse
 
 
 client_id = "MQTT2Graphite_%d-%s" % (os.getpid(), socket.getfqdn())
@@ -136,10 +125,10 @@ def main():
 
     parser = argparse.ArgumentParser( fromfile_prefix_chars='@' )
     parser.add_argument( "-c", "--config", type=open, action=LoadFromFile, help="Load config from file" )
-    parser.add_argument( "--mqtt", default="localhost:1883" )
+    parser.add_argument( "--mqtt", default="localhost:1883", type=urlparse.urlparse )
     parser.add_argument( "--auth" )
     parser.add_argument( "--carbon", default="127.0.0.1:2003" )
-    #parser.add_argument( "--map", type=file, default="map", target="mapfile" )
+
     parser.add_argument( "-m", action="append", nargs="*", dest="map" )
     parser.add_argument( "-v", action="store_true", default=False, help="Verbose logging", dest="verbose" )
     parser.add_argument( "--logfile", help="Logging into file" )
@@ -149,16 +138,6 @@ def main():
     logging.basicConfig(format="[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s",  level=logging.DEBUG if args.verbose else logging.INFO, filename=args.logfile )
 
     map = {}
-    #for line in args.mapfile.readlines():
-    #    line = line.rstrip()
-    #    if len(line) == 0 or line[0] == '#':
-    #        continue
-    #    remap = None
-    #    try:
-    #        type, topic, remap = line.split()
-    #    except ValueError:
-    #        type, topic = line.split()
-    #    map[topic] = (type, remap)
     for item in args.map:
         type = item[0]
         topic = item[1]
@@ -181,24 +160,17 @@ def main():
     global mqttc
 
     mqttc = paho.Client(client_id, clean_session=True, userdata=userdata)
-    if args.auth!=None:
-       auth = args.auth.split(":")
-       mqttc.username_pw_set( auth[0], auth[1] )
-
+    if args.mqtt.username!=None:
+       mqttc.username_pw_set(args.mqtt.username, args.mqtt.password )
     mqttc.on_message = on_message
     mqttc.on_connect = on_connect
     mqttc.on_disconnect = on_disconnect
     mqttc.on_subscribe = on_subscribe
-
-    mqttc.will_set("clients/" + client_id, payload="Adios!", qos=0, retain=False)
-
-    host = parse_host_port(args.mqtt,1883)
-    mqttc.connect(host[0], host[1], 60)
+    mqttc.connect(args.mqtt.hostname, 1883 if args.mqtt.port==None else args.mqtt.port , 60)
 
     signal.signal(signal.SIGTERM, cleanup)
     signal.signal(signal.SIGINT, cleanup)
 
     mqttc.loop_forever()
-
 if __name__ == '__main__':
    main()

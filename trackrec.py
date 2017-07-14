@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import logging
 import argparse
 import urlparse
@@ -73,7 +75,7 @@ if __name__ == "__main__":
    parser.add_argument( "--storage", default="/tmp/" )
 
    parser.add_argument( "-c", "--config", type=open, action=LoadFromFile, help="Load config from file" )
-   parser.add_argument( "-u","--url", default="localhost:1883", type=urlparse.urlparse )
+   parser.add_argument( "-u","--url", default="mqtt://localhost:1883", type=urlparse.urlparse )
    parser.add_argument( "-v", action="store_true", default=False, help="Verbose logging", dest="verbose" )
    parser.add_argument( "--logfile", help="Logging into file" )
    args = parser.parse_args()
