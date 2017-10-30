@@ -254,8 +254,8 @@ class EnergyMeter:
 
        str_val = json.dumps(self.measure)
        logging.debug( str_val )
-       self.mqttc.publish('/home/energy', str_val )
-       
+       self.mqttc.publish('/home/sensor/energy', str_val )
+      
 
 
     

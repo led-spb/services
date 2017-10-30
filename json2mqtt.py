@@ -28,7 +28,7 @@ params = { 'auth':     None if args.mqtt.username==None else {'username': args.m
            'port':     1883 if args.mqtt.port==None else args.mqtt.port,
            'retain':   args.retain }
 
-jinja = Environment()
+jinja = Environment( extensions=['jinja2.ext.do'] )
 jinja.filters['datetimeformat'] = datetimeformat
 jinja.filters['todatetime'] = todatetime
 

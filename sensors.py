@@ -70,7 +70,7 @@ if __name__ == '__main__':
         sensor.changed = time.time()
 
         logging.info( "Register sensor %s(GPIO%d), state: %d", sensor.name, sensor.pin, sensor.status )
-        mqttc.publish( '/home/alarm/sensor/%s' % sensor.name, 1 if sensor.isAlert() else 0, retain=True )
+        mqttc.publish( '/home/sensor/%s' % sensor.name, 1 if sensor.isAlert() else 0, retain=True )
 
     # Listen for changes
     while True:
@@ -86,6 +86,6 @@ if __name__ == '__main__':
                   sensor.changed = now
 
                   logging.info( "Sensor %s(GPIO%d) changed state: %d", sensor.name, sensor.pin, sensor.status )
-                  mqttc.publish( '/home/alarm/sensor/%s' % sensor.name, 1 if sensor.isAlert() else 0, retain=True )
+                  mqttc.publish( '/home/sensor/%s' % sensor.name, 1 if sensor.isAlert() else 0, retain=True )
 
         time.sleep(0.1)
