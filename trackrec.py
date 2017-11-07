@@ -7,6 +7,7 @@ import paho.mqtt.client as mqtt
 import json
 import os.path
 import gpxpy.gpx
+from gpxpy.gpx import TimeBounds
 import datetime
 
 class GPXRecorder:
@@ -15,9 +16,12 @@ class GPXRecorder:
           self.mqttc = mqtt.Client()
           if url.username!=None:
               self.mqttc.username_pw_set( url.username, url.password )
+
           self.mqttc.on_connect = self.on_mqtt_connect
           self.mqttc.on_message = self.on_mqtt_message
           self.storage = storage
+          self.counters = {}
+          self.load_counters()
 
       def start(self):
           self.mqttc.connect( self.url.hostname, self.url.port if self.url.port!=None else 1883, 60 )
@@ -41,13 +45,66 @@ class GPXRecorder:
           if "track" in data:
              gpx = self.track2gpx( data["track"] )
 
-             start_time = gpx.get_time_bounds().start_time
+             start_time = self.get_time_bounds( gpx ).start_time
+
              filename = "%s-%s.gpx" % (device, start_time.strftime("%Y_%m_%d-%H_%M") )
              logging.info("Storing track to %s", filename)
 
              f = open( os.path.join(self.storage, filename), "wb" )
              f.write( gpx.to_xml() )
              f.close()
+
+             self.publish_stat(client, device, tracker, gpx )
+          pass
+
+      def get_time_bounds(self, gpx):
+          start_time = None
+          end_time = None
+          for point in gpx.get_points_data():
+              if point.point.time:
+                 if start_time==None and point.distance_from_start>0:
+                    start_time = point.point.time
+                 end_time = point.point.time
+          return TimeBounds(start_time,end_time)
+
+      def load_counters(self):
+          try:
+             fp = open("trackrec.dat","rb")
+             self.counters = json.load( fp )
+             fp.close()
+          except:
+             pass
+          pass
+
+      def store_counters(self):
+          try:
+             fp = open("trackrec.dat","wt")
+             json.dump(self.counters, fp )
+             fp.close()
+          except:
+             pass
+          pass
+
+      def publish_stat(self, client, device, tracker, gpx):
+          time_data = self.get_time_bounds( gpx )
+          move_data = gpx.get_moving_data()
+
+          move_time = (time_data.end_time - time_data.start_time).total_seconds()
+          avg_speed = move_data.moving_distance / move_time
+
+          if device not in self.counters:
+             self.counters[device] = { 'odo': 0, 'engine_time': 0 }
+
+          self.counters[device]['odo']         = self.counters[device]['odo'] + move_data.moving_distance/1000
+          self.counters[device]['engine_time'] = self.counters[device]['engine_time'] + move_time/3600.0
+
+          self.store_counters()
+
+          stat = {
+             'move_time': move_time, 'avg_speed': avg_speed*3.6, 'max_speed': move_data.max_speed * 3.6, 'distance': move_data.moving_distance/1000
+          }
+          stat.update( self.counters[device] )
+          client.publish( 'owntracks/%s/%s/stat' % (device,tracker),  json.dumps(stat), retain=True )
           pass
 
       def track2gpx(self, track):

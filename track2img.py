@@ -1,5 +1,6 @@
 import logging
 import gpxpy
+from gpxpy.gpx import TimeBounds
 import argparse
 import urllib2
 
