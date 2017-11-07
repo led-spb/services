@@ -47,7 +47,7 @@ def on_message(mosq, userdata, msg):
 
     for t in map:
         if paho.topic_matches_sub(t, msg.topic):
-            (type, remap) = map[t]
+            (remap) = map[t]
             if remap is None:
                 carbonkey = msg.topic.replace('/', '.')
             else:
@@ -116,10 +116,9 @@ def main():
 
     map = {}
     for item in args.map:
-        type = item[0]
-        topic = item[1]
-        remap = None if len(item)==2 else item[3]
-        map[topic] = (type, remap)
+        topic = item[0]
+        remap = None if len(item)==1 else item[1]
+        map[topic] = (remap)
 
     influx_client = InfluxDBClient(host='localhost',port=8086, database=args.database)
     try:
