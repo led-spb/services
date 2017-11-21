@@ -4,7 +4,7 @@ import logging
 import argparse
 import urlparse
 import paho.mqtt.client as mqtt
-import json
+import json, zlib
 import os.path
 import gpxpy.gpx
 from gpxpy.gpx import TimeBounds
@@ -37,24 +37,34 @@ class GPXRecorder:
           pass
 
       def on_mqtt_message(self, client, userdata, message):
-          logging.info("Got mqtt message: %s %s", message.topic, message.payload )
+          logging.debug("Got mqtt message: %s %s", message.topic, message.payload )
           d = message.topic.split("/")
           device, tracker = (d[1],d[2])
 
-          data = json.loads(message.payload)
-          if "track" in data:
-             gpx = self.track2gpx( data["track"] )
+          try:
+             data = {}
+             try:
+                data = json.loads(message.payload)
+             except:
+                s = zlib.decompress(message.payload, 16+zlib.MAX_WBITS) #gzip.decompress(message.payload).decode("utf-8")
+                # logging.info("Decompressed data: %s", s)
+                data = json.loads(s)
 
-             start_time = self.get_time_bounds( gpx ).start_time
+             if "track" in data:
+                gpx = self.track2gpx( data["track"] )
 
-             filename = "%s-%s.gpx" % (device, start_time.strftime("%Y_%m_%d-%H_%M") )
-             logging.info("Storing track to %s", filename)
+                start_time = self.get_time_bounds( gpx ).start_time or datetime.datetime.now()
 
-             f = open( os.path.join(self.storage, filename), "wb" )
-             f.write( gpx.to_xml() )
-             f.close()
+                filename = "%s-%s.gpx" % (device, start_time.strftime("%Y_%m_%d-%H_%M") )
+                logging.info("Storing track to %s", filename)
 
-             self.publish_stat(client, device, tracker, gpx )
+                f = open( os.path.join(self.storage, filename), "wb" )
+                f.write( gpx.to_xml() )
+                f.close()
+
+                self.publish_stat(client, device, tracker, gpx )
+          except:
+             logging.exception("Error while process data from MQTT")
           pass
 
       def get_time_bounds(self, gpx):
@@ -65,6 +75,8 @@ class GPXRecorder:
                  if start_time==None and point.distance_from_start>0:
                     start_time = point.point.time
                  end_time = point.point.time
+          if start_time==None:
+             start_time=end_time
           return TimeBounds(start_time,end_time)
 
       def load_counters(self):
@@ -90,7 +102,7 @@ class GPXRecorder:
           move_data = gpx.get_moving_data()
 
           move_time = (time_data.end_time - time_data.start_time).total_seconds()
-          avg_speed = move_data.moving_distance / move_time
+          avg_speed = (move_data.moving_distance / move_time) if move_time!=0 else 0
 
           if device not in self.counters:
              self.counters[device] = { 'odo': 0, 'engine_time': 0 }
@@ -104,6 +116,7 @@ class GPXRecorder:
              'move_time': move_time, 'avg_speed': avg_speed*3.6, 'max_speed': move_data.max_speed * 3.6, 'distance': move_data.moving_distance/1000
           }
           stat.update( self.counters[device] )
+          logging.info("Sendning stat for device:%s %s", device, json.dumps(stat) )
           client.publish( 'owntracks/%s/%s/stat' % (device,tracker),  json.dumps(stat), retain=True )
           pass
 
