@@ -33,7 +33,7 @@ class GPXRecorder:
       def on_mqtt_connect(self, client, userdata, flags, rc):
           logging.info("MQTT broker connection result: %s", mqtt.connack_string(rc) )
           if rc==0:
-             client.subscribe("owntracks/+/+/track", 0)
+             client.subscribe("owntracks/#", 0)
           pass
 
       def on_mqtt_message(self, client, userdata, message):
@@ -46,9 +46,12 @@ class GPXRecorder:
              try:
                 data = json.loads(message.payload)
              except:
-                s = zlib.decompress(message.payload, 16+zlib.MAX_WBITS) #gzip.decompress(message.payload).decode("utf-8")
-                # logging.info("Decompressed data: %s", s)
-                data = json.loads(s)
+                try:
+                   s = zlib.decompress(message.payload, 16+zlib.MAX_WBITS) #gzip.decompress(message.payload).decode("utf-8")
+                   # logging.info("Decompressed data: %s", s)
+                   data = json.loads(s)
+                except:
+                   pass
 
              if "track" in data:
                 gpx = self.track2gpx( data["track"] )
@@ -104,6 +107,8 @@ class GPXRecorder:
           move_time = (time_data.end_time - time_data.start_time).total_seconds()
           avg_speed = (move_data.moving_distance / move_time) if move_time!=0 else 0
 
+          self.load_counters()
+
           if device not in self.counters:
              self.counters[device] = { 'odo': 0, 'engine_time': 0 }
 
@@ -113,10 +118,14 @@ class GPXRecorder:
           self.store_counters()
 
           stat = {
-             'move_time': move_time, 'avg_speed': avg_speed*3.6, 'max_speed': move_data.max_speed * 3.6, 'distance': move_data.moving_distance/1000
+             '_type': 'stat',
+             'move_time': move_time, 
+             'avg_speed': avg_speed*3.6, 
+             'max_speed': move_data.max_speed * 3.6, 
+             'distance': move_data.moving_distance/1000
           }
           stat.update( self.counters[device] )
-          logging.info("Sendning stat for device:%s %s", device, json.dumps(stat) )
+          logging.info( "Sendning stat for device:%s %s", device, json.dumps(stat) )
           client.publish( 'owntracks/%s/%s/stat' % (device,tracker),  json.dumps(stat), retain=True )
           pass
 
